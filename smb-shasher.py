@@ -248,21 +248,23 @@ def write_long_csv(out_path: Path, perm_map, user_order: List[str]):
 def write_matrix_csv(out_path: Path, perm_map, user_order: List[str], include_flags: bool = True):
     """
     Matrix format: row per (host, share), columns are users with values W/R/-
-    Extra: any_write, any_read, classification, description
+    Extra: WRITE (Y/N), classification, description
     """
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with out_path.open('w', newline='', encoding='utf-8') as f:
         w = csv.writer(f)
         header = ['ip', 'host', 'share'] + user_order
         if include_flags:
-            header += ['any_write', 'any_read', 'classification', 'description']
+            header += ['WRITE', 'classification', 'description']
         w.writerow(header)
-        for (ip, host, share), info in sorted(perm_map.items(), key=lambda x: (x[0][1].lower(), x[0][2].lower())):
+
+        for (ip, host, share), info in sorted(
+            perm_map.items(), key=lambda x: (x[0][1].lower(), x[0][2].lower())
+        ):
             perms = info['perms']
             row = [ip, host, share]
             vals = []
             any_w = False
-            any_r = False
             for user in user_order:
                 p = perms.get(user)
                 if p == 'WRITE':
@@ -270,13 +272,13 @@ def write_matrix_csv(out_path: Path, perm_map, user_order: List[str], include_fl
                     any_w = True
                 elif p == 'READ':
                     vals.append('R')
-                    any_r = True
                 else:
                     vals.append('-')
             row.extend(vals)
+
             if include_flags:
                 cls = classify_share(perms, user_order)
-                row.extend(['Y' if any_w else 'N', 'Y' if any_r else 'N', cls, info['desc']])
+                row.extend(['Y' if any_w else 'N', cls, info['desc']])
             w.writerow(row)
 
 def main():
